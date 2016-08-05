@@ -1,0 +1,4 @@
+LIBRARY	"DllUseIDL"
+EXPORTS
+	DllGetClassObject PRIVATE
+	DllCreateInstance PRIVATE

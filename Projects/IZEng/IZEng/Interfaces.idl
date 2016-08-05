@@ -1,0 +1,329 @@
+import "oaidl.idl";
+import "ocidl.idl";
+
+//used with IAnim::CreateAnim()
+enum {PLAY_REPEAT,PLAY_ONCE};
+//used with IPhysics::SetBoundsReact()
+enum {REACT_NO,REACT_BOUNCE,REACT_TELEPORT,REACT_STOP,REACT_RAND_TELEPORT};
+//used with IAccelMovement::SetAccel()
+enum {TYPE_BRAKE=-1,TYPE_NO=0,TYPE_ACCEL=1};
+//used wtih IHUD::AddText()
+enum {TXT_CENTER = 0x00000025, TXT_HCENTER = 0x00000001/*DT_CENTER*/, TXT_VCENTER = 0x00000024/*DT_VCENTER|DT_SINGLELINE*/,
+	TXT_LEFT = 0x00000000/*DT_LEFT*/, TXT_RIGHT = 0x00000002/*DT_RIGHT*/, 
+	TXT_TOP = 0x00000000/*DT_TOP*/, TXT_BOTTOM = 0x00000008/*DT_BOTTOM*/};
+//TXT_VCENTER заставляет текст быть в одну строку
+
+//графическая часть
+//общая/////////////////////////////////////////////////////////////////////////////////
+[object, uuid(095EFAFC-4B15-4ab6-9712-F70CA70C0DCA)]
+interface IScreen:IUnknown {
+	HRESULT ResetDisplay(
+		[in] HWND hDispWnd,
+		[in] int nWidth, 
+		[in] int nHeight,
+		[in] int nRefRate,
+		[in] BOOL bFullscreen,
+		[in] int nFPS);
+	HRESULT UpdateScreen();
+	HRESULT MoveCamera([in]POINTF* pvecD);
+	HRESULT SetCamera([in]POINTF* pptCam);
+	HRESULT GetCameraPos([in,out]POINTF *pptCam);
+	HRESULT ShutDown();
+	//test
+	HRESULT GetScreenRect([in,out]RECT *prcScreen);
+	HRESULT GetScreenWH([in,out]POINTF *pptScreen);
+	HRESULT GetCameraRect([in,out]RECT *prcCam);
+	HRESULT GetCameraRBPos([in,out]POINTF *pptCam);
+	//test
+	HRESULT SetWorldBounds([in]RECT* prcBounds);
+	HRESULT GetWorldBounds([in,out]RECT* prcBounds);
+	HRESULT AddFrameTable(
+		[in,out] int* pnID,
+		[in] UCHAR* strPathToFile,
+		[in] int nNeededFrameW,
+		[in] int nNeededFrameH,
+		[in] int nColumns,
+		[in] int nRows,
+		[in] BOOL bTransparent,
+		[in] DWORD dwTranspColor);
+	HRESULT AddBMPFrameTable(
+		[in,out] int* pnID,
+		[in] UCHAR* strPathToFile,
+		[in] int nNeededFrameW,
+		[in] int nNeededFrameH,
+		[in] int nColumns,
+		[in] int nRows,
+		[in] BOOL bTransparent,
+		[in] DWORD dwTranspColor);
+	HRESULT AddAngledTables(
+		[in,out] int* pnID, 
+		[in] int* pidSrcFrameTable,
+		[in]float fTurnAngle,
+		[in]float fNeededAngleOfFirstTable);
+	HRESULT AddOrGetExistingFrameTable(
+		[in,out] int* pnID,
+		[in] UCHAR* strPathToFile,
+		[in] int nNeededFrameW,
+		[in] int nNeededFrameH,
+		[in] int nColumns,
+		[in] int nRows,
+		[in] BOOL bTransparent,
+		[in] DWORD dwTranspColor);
+	HRESULT AddEmptyFrameTable(
+		[in,out] int* pnID,
+		[in] int nNeededFrameW,
+		[in] int nNeededFrameH,
+		[in] int nColumns,
+		[in] int nRows,
+		[in] BOOL bTransparentFill,
+		[in] DWORD dwFillColor);
+	//AddEmptyFrameTable
+};
+
+//управление////////////////////////////////////////////////////////////////////
+[object, uuid(C7870A77-E3FB-4b3b-9863-FEFE4FA00DAC)]
+interface IInput:IUnknown {
+	HRESULT CheckKeyDown([in] int vKey,[in,out] BOOL* bRes);
+	HRESULT CheckKeyUp([in] int vKey,[in,out] BOOL* bRes);
+};
+
+//графическая часть
+//конкретного виз. объекта//////////////////////////////////////////////////////////////
+[object, uuid(FA21E599-0F20-49ce-B809-4E086D793899)]
+interface IAnim:IUnknown {
+	HRESULT UseExistingFrameTable([in] int* pnID);
+	HRESULT SetFrameTime([in]int nAnimInd, [in] int msTime);
+	HRESULT CreateAnim(
+		[in] int nAnimInd, 
+		[in] int nFramesAmount, 
+		[in] int *arrFrameInds);
+	HRESULT SetAnimType([in] int nAnimInd,[in] int nPlayType);
+	HRESULT SelectActiveAnim([in] int nAnimInd);
+	HRESULT SelectActiveFrame([in] int nFrameInd);
+	HRESULT FreezeFrame([in] BOOL bFreeze);
+	HRESULT GetCurAnimInd([in,out] int *pnCurAnimInd);
+	HRESULT CheckEndAnim([in,out] BOOL *pbEndAnim);
+	HRESULT CheckHalfAnimPlayed([in,out] BOOL *pbHalfAnim);
+	HRESULT GetFrameAmountInTable([in,out] int *pnFrames);
+	//for easy and fast use
+	HRESULT UseExistingFrameTableAsSimpleAnim([in] int* pnID);
+	HRESULT CreateSimpleAnim();
+	HRESULT CreateLinearAnim([in] int nAnimInd,[in] int nStartFrame,[in] int nEndFrame);
+	HRESULT LoadSimpleAnim(
+		[in] UCHAR* strPathToFile,
+		[in] int nNeededFrameW,
+		[in] int nNeededFrameH,
+		[in] int nColumns,
+		[in] int nRows,
+		[in] BOOL bTransparent,
+		[in] DWORD dwTranspColor);
+	HRESULT LoadFrameTable(
+		[in] UCHAR* strPathToFile,
+		[in] int nNeededFrameW,
+		[in] int nNeededFrameH,
+		[in] int nColumns,
+		[in] int nRows,
+		[in] BOOL bTransparent,
+		[in] DWORD dwTranspColor);
+	HRESULT LoadOrUseExistingSimpleAnim(
+		[in] UCHAR* strPathToFile,
+		[in] int nNeededFrameW,
+		[in] int nNeededFrameH,
+		[in] int nColumns,
+		[in] int nRows,
+		[in] BOOL bTransparent,
+		[in] DWORD dwTranspColor);
+	HRESULT LoadOrUseExistingFrameTable(
+		[in] UCHAR* strPathToFile,
+		[in] int nNeededFrameW,
+		[in] int nNeededFrameH,
+		[in] int nColumns,
+		[in] int nRows,
+		[in] BOOL bTransparent,
+		[in] DWORD dwTranspColor);
+};
+
+[object, uuid(107B86D6-DC6F-4f5b-9AB9-FB106ECABBC0)]
+interface IDraw:IUnknown {
+	//Show/Hide
+	HRESULT Show();
+	HRESULT Hide();
+	HRESULT ShowOn([in] int depth);
+	HRESULT CheckVisible([in,out]BOOL* pRes);
+	//WORKING WITH PIXELS...
+	HRESULT GetTranspColor([in,out]DWORD *pdwColor);
+	HRESULT Lock();
+	HRESULT GetPixel([in] POINTF* pptWhere,[in,out]DWORD *pdwPixColor);
+	HRESULT Unlock();
+};
+
+[object, uuid(6C265245-E8BB-4cac-9283-BEB8DAEE1B91)]
+interface IAngledDraw:IUnknown {
+	HRESULT UseExistingAngledTables([in] int* pnAngledTablesPack);
+	HRESULT UseExistingAngledTablesAndSimpleAnim([in] int* pnAngledTablesPack, [in] int nNumStartTable);
+	HRESULT GetNumTables([in,out] int* pnNumTables);
+	HRESULT SelectTable([in] int nNo);
+	HRESULT SelectTableByAngle([in] float fAngle);
+	HRESULT SelectTableByVector([in] POINTF *pvec);
+};
+
+[object, uuid(33E213D7-2E97-4647-9488-F73E7DEB5360)]
+interface IParams:IUnknown {
+	HRESULT SetPos([in] POINTF *pptPos);
+	HRESULT Move([in]POINTF *pvecShift);
+	HRESULT GetSmallestRad([in,out] float *pfRad);
+	HRESULT GetBiggestRad([in,out] float *pfRad);
+	HRESULT GetCoordsRect([in,out] RECT* rcCoords);
+	HRESULT GetCoordsWHRect([in,out] RECT* rcCoordsWH);
+	HRESULT GetCoordsPt([in,out] POINTF* ptCoords);
+	HRESULT GetCentreCoordsPt([in,out] POINTF* ptCentreCoords);
+	HRESULT GetWidthAndHeight([in,out] POINTF *pwhFrame);
+	HRESULT GetHalfWidthAndHeight([in,out] POINTF *pwhFrame);
+	HRESULT GetWidth([in,out] int *pnWidth);
+	HRESULT GetHeight([in,out] int *pnHeight);
+	//slow
+	HRESULT GetLX([in,out] int *pnLX);
+	HRESULT GetTY([in,out] int *pnTY);
+	HRESULT GetCX([in,out] int *pnCX);
+	HRESULT GetRX([in,out] int *pnRX);
+	HRESULT GetCY([in,out] int *pnCY);
+	HRESULT GetBY([in,out] int *pnBY);
+	HRESULT Resize([in]int nNewWidth, int nNewHeight);
+};
+
+[object, uuid(77C81842-F7E2-41b9-B5B4-BF8250B6C345)]
+interface IHUD:IUnknown {
+	//HUD
+	//GDI
+	HRESULT DrawText([in] LPRECT prcTextBox,[in] LPWSTR strText,DWORD dwColor,int nHeight);
+	HRESULT DrawLine([in]POINTF* ppt1, [in] POINTF *ppt2,[in] DWORD dwColor,[in]int nWidth);
+	///
+	HRESULT DrawVLine([in]int x,[in]int y0,[in]int y1,[in]int nRad,[in]DWORD dwColor);
+	HRESULT DrawHLine([in]int x0,[in]int x1,[in] int y,[in]int nRad,[in]DWORD dwColor);
+	HRESULT ColorFill([in]RECT *pRect,[in] DWORD dwColor);
+	HRESULT DrawPoint([in]POINTF *ppt,[in] DWORD dwColor,[in] int nWidth);
+	//test
+	HRESULT AddText([in] LPRECT prcTextBox,[in] UCHAR* strText,[in] DWORD dwColor,[in] int nHeight, [in] DWORD dwFlags);
+	[helpstring("Закрашивает полностью, включая все границы прямоугольника")]
+	HRESULT AddColorFill([in]RECT *pRect,[in] DWORD dwColor);
+	HRESULT AddHLine([in]int x0,[in]int x1,[in] int y,[in]int nWidth,[in]DWORD dwColor);
+	HRESULT AddVLine([in]int x,[in]int y0,[in]int y1,[in]int nWidth,[in]DWORD dwColor);
+	HRESULT AddLine([in]POINTF* ppt1, [in] POINTF *ppt2,[in] DWORD dwColor,[in]int nWidth);
+	[helpstring("Добавляет рисунок кнопки - обведенный прямоугольник с текстом")]
+	HRESULT AddBtnView([in]RECT rcBounds, [in]int nBorderWidth,
+			[in]DWORD clBack, [in]DWORD clBorder, [in]UCHAR* caption, 
+			[in]DWORD clFont, [in]int nFontHeight, [in]int nFontFlags);
+};
+
+//модели движения//////////////////////////////////////////////////////////////
+[object, uuid(17891271-BC0F-471b-ABD9-397172F963C1)]
+interface IPhysics:IUnknown {
+	HRESULT CheckStopped([in,out] BOOL* pbStopped);
+	//HRESULT CalculateSpeed();
+	//HRESULT Move();
+	HRESULT SetGround([in]int nYGroundLevel);
+	HRESULT SetNoGround();
+	[helpstring("ограничивает движение, как он это делает зад. SetRectBehavior")] HRESULT SetBounds([in] RECT rcBounds,[in]BOOL bMoveWithCamera);
+	[helpstring("REACT_NO,REACT_BOUNCE,REACT_TELEPORT,REACT_STOP,REACT_RAND_TELEPORT")] HRESULT SetBoundsReact([in] int nReact);
+	[helpstring("обновляет физику всех объектов (надо вызывать на каждом кадре перед прорисовкой")]
+	HRESULT UpdatePhysics();
+	[helpstring("проверка столкновения методом вписанных окружностей")]
+	HRESULT CheckCollisionCircleCircle([in] IParams* pOtherObj, [in,out] BOOL* bCollision);
+};
+
+[object, uuid(4FBFB4E6-9B1A-4f5d-862B-072F2590C111)]
+interface ILinearMovement:IUnknown {//UNSAFE!
+	HRESULT SetSpeed([in] float fSpeed);
+	HRESULT SetOrtVel([in]POINTF *portVel, [in]BOOL bSetSpeedIgnored);
+	HRESULT SetVel([in]POINTF *pvecVel);
+	HRESULT GetVel([in,out] POINTF *pvecVel);
+	HRESULT GetOrtVel([in,out] POINTF *portVel);
+	HRESULT GetRealSpeed([in,out] float *pfSpeed);
+	//UNSAFE!
+	HRESULT SetDirX([in] float fEX, [in]BOOL bSetSpeedIgnored);
+	HRESULT SetDirY([in] float fEY, [in]BOOL bSetSpeedIgnored);
+	HRESULT GetVelX([in,out] float *pfEX);
+	HRESULT GetVelY([in,out] float *pfEY);
+};
+
+[object, uuid(72A3CC05-7390-49d7-ABA8-74B9A459D7C1)]
+interface IAccelMovement:IUnknown {
+	HRESULT SetAccel([in] float fAccel);
+	HRESULT SetMaxSpeed([in] float fMaxSpeed);
+	HRESULT SetOrtAccel([in] POINTF *portAcc);
+	[helpstring("{TYPE_BRAKE,TYPE_NO,TYPE_ACCEL};")]
+	HRESULT EnableAccel([in]int nAccelType);
+	//Get
+	HRESULT GetAccel([in,out]float *pfAccel);
+	HRESULT GetMaxSpeed([in,out]float *pfMaxSpeed);
+	HRESULT GetOrtAccel([in,out]POINTF *portAccel);
+	HRESULT GetAccelType([in,out]int *pnAccelType);
+	HRESULT GetVecAccel([in,out]POINTF *vecAccel);
+	//UNSAFE!
+	HRESULT SetAccelDirX([in] float fEX);
+	HRESULT SetAccelDirY([in] float fEY);
+	HRESULT GetAccelEX([in,out]float *pfEX);
+	HRESULT GetAccelEY([in,out]float *pfEY);
+};
+
+[object, uuid(54DC2001-5C70-48a1-B9F2-3979CD521D3B)]
+interface IRotation:IUnknown {
+	HRESULT SetTurnAngle([in] float fAngle);
+	HRESULT Turn([in] int nDirection);
+	HRESULT StepTo([in] POINTF *pvec);
+	HRESULT TurnImm([in] POINTF *pvec);
+};
+
+[object, uuid(42FEC7E4-C715-4428-BC8F-631ED6DFB8D6)]
+interface IOrbitMovement:IUnknown {
+	HRESULT PutOnOrbit([in]POINTF* pptOrbitCentre,[in]float fAngle,[in]float fRadOrbit);
+	HRESULT MakeCurPosBeOnOrbit([in]POINTF* pptOrbitCentre);
+	HRESULT SetOrbitDir([in]int nMoveDir);
+	HRESULT EnableOrbitMovement([in]BOOL bIsOnOrbit);
+	HRESULT GetOrbitCentre([in,out]POINTF* pptOrbitCentre);
+	HRESULT CheckOnOrbit([in,out]BOOL *pbIsOnOrbit);
+};
+
+[object, uuid(8B3042C4-0071-4780-8B66-A88EF0AEDB9C)]
+interface IJump:IUnknown {
+	HRESULT SetJumpSpeed([in] float fJSpeed);
+	[helpstring("прыжок только c уровня земли, заданного в IPhysics")] HRESULT Jump();
+};
+
+[object, uuid(FBFF4301-8175-443c-A456-E42BE908620C)]
+interface IResistForces:IUnknown {
+	HRESULT ResetForces();
+	HRESULT SetGravity([in]POINTF *pvecGravAccel);
+	HRESULT SetFriction([in]POINTF *pvecFric);
+};
+
+//БИБЛИОТЕКА////////////////////////////////////////////////////////////////////////////////
+[uuid(C404429E-63CA-4089-B11C-13410EAE743B),version(1.0),helpstring("библиотека с визуальным объектом")]
+library VisObjLib
+{
+	[uuid(4BCD9790-ABCE-4b14-837B-C48F521FE2FD)]
+	coclass VisObj
+	{
+		//графическая часть
+		//общая
+		interface IScreen;
+		//управление
+		interface IInput;
+		//конкретного виз. объекта
+		interface IDraw;
+		interface IAngledDraw;
+		interface IAnim;
+		interface IParams;
+		//HUD или меню
+		interface IHUD;
+		//модели движения
+		interface IPhysics; //столкновения и обобщенное движение
+		interface ILinearMovement;
+		interface IRotation;
+		interface IOrbitMovement;
+		interface IAccelMovement;
+		interface IJump;
+		interface IResistForces;
+		//модели столкновений, в том числе с заданной рамкой (экрана, например)
+	};
+};
